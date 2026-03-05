@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>AVANCE ELECTRIFIACION SANTA CLARA Y 1 DE ENERO- TECSUR </title>
+  <title>AVANCE ELECTRIFIACION SANTA CLARA - TECSUR </title>
 
   <style>
     :root {
@@ -77,17 +77,26 @@
     .bar-progress { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px 0 0 5px; background: rgba(255,255,255,0.25); pointer-events: none; }
     .bar-label { position: relative; font-size: 0.7rem; font-weight: 700; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.5); z-index: 3; }
 
+    /* ESTILO BARRA MAESTRA */
+    .bar-master { height: 32px !important; top: 6px !important; border: 2px solid var(--accent) !important; background: rgba(56, 189, 248, 0.15) !important; }
+
     .today-line { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--critical); z-index: 4; pointer-events: none; }
     
-    /* TOOLTIP */
-    #tooltip { position: fixed; background: #020617; border: 1px solid var(--accent); padding: 1rem; border-radius: 8px; z-index: 1000; pointer-events: none; display: none; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); font-size: 0.85rem; width: 280px; }
+    /* TOOLTIP DISEÑO MEJORADO */
+    #tooltip { 
+      position: fixed; background: #020617; border: 1px solid var(--accent); 
+      padding: 1rem; border-radius: 8px; z-index: 1000; pointer-events: none; 
+      display: none; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); 
+      font-size: 0.85rem; width: 280px; line-height: 1.4;
+    }
+    .tt-title { color: var(--accent); font-weight: bold; border-bottom: 1px solid var(--line); margin-bottom: 8px; padding-bottom: 4px; font-size: 0.9rem; }
   </style>
 </head>
 
 <body>
 
   <header>
-    <h1>AVANCE ELECTRIFIACION SANTA CLARA - TECSUR</h1>
+    <h1>AVANCE ELECTRIFIACION SANTA CLARA - TECSUR </h1>
     <div id="todayLabel" style="font-size: 0.85rem; color: var(--muted);"></div>
   </header>
 
@@ -129,7 +138,6 @@
   <div id="tooltip"></div>
 
   <script>
-    // DATOS DE LA TABLA (INYECTADOS)
     const rawData = [
       { id: "R1-F1-01", reporte: "R1 - OBRAS PROVISIONALES Y PRELIMINARES", fase: "Fase 1", owner: "TECSUR", inicio: "2026-01-31", fin: "2026-04-06", estado: "En progreso", avance: 0.83 },
       { id: "R3-F3-02", reporte: "R2.1 - MONTAJE DE POSTES - MEDIA TENSIÓN", fase: "Fase 1", owner: "TECSUR", inicio: "2026-01-29", fin: "2026-03-30", estado: "En progreso", avance: 0.94 },
@@ -149,7 +157,7 @@
     ];
 
     const DAY_W = 32;
-    const TODAY = new Date("2026-03-04"); // Fecha de corte hoy
+    const TODAY = new Date("2026-03-04");
 
     function init() {
       populateFilters();
@@ -162,7 +170,6 @@
       const fFase = document.getElementById('filter-fase');
       const fOwner = document.getElementById('filter-owner');
       const fEstado = document.getElementById('filter-estado');
-
       [...new Set(rawData.map(d => d.fase))].forEach(v => fFase.add(new Option(v, v)));
       [...new Set(rawData.map(d => d.owner))].forEach(v => fOwner.add(new Option(v, v)));
       [...new Set(rawData.map(d => d.estado))].forEach(v => fEstado.add(new Option(v, v)));
@@ -174,28 +181,24 @@
       const estadoV = document.getElementById('filter-estado').value;
 
       const filtered = rawData.filter(d => 
-        (!faseV || d.fase === faseV) &&
-        (!ownerV || d.owner === ownerV) &&
-        (!estadoV || d.estado === estadoV)
+        (!faseV || d.fase === faseV) && (!ownerV || d.owner === ownerV) && (!estadoV || d.estado === estadoV)
       );
 
-      // Calcular KPIs
-      const totalAvance = filtered.reduce((acc, d) => acc + d.avance, 0) / (filtered.length || 1);
+      // KPIs
+      const totalAvance = rawData.reduce((acc, d) => acc + d.avance, 0) / rawData.length;
       document.getElementById('kpi-real').innerText = `${(totalAvance * 100).toFixed(1)}%`;
-      document.getElementById('kpi-done').innerText = `${filtered.filter(d => d.estado === 'Terminado').length}/${filtered.length}`;
+      document.getElementById('kpi-done').innerText = `${rawData.filter(d => d.estado === 'Terminado').length}/${rawData.length}`;
       
-      const lastDate = new Date(Math.max(...filtered.map(d => new Date(d.fin))));
-      const diffDays = Math.ceil((lastDate - TODAY) / (1000 * 60 * 60 * 24));
+      const projectEnd = new Date("2026-04-09");
+      const diffDays = Math.ceil((projectEnd - TODAY) / (1000 * 60 * 60 * 24));
       document.getElementById('kpi-days').innerText = diffDays > 0 ? diffDays : "Plazo Vencido";
 
-      // Rango de fechas para el Gantt
+      // Fechas Gantt
       const minDate = new Date(Math.min(...rawData.map(d => new Date(d.inicio))));
       minDate.setDate(minDate.getDate() - 3);
-      const maxDate = new Date(Math.max(...rawData.map(d => new Date(d.fin))));
-      maxDate.setDate(maxDate.getDate() + 7);
+      const maxDate = new Date("2026-04-15");
       const totalDays = Math.ceil((maxDate - minDate) / (1000 * 60 * 60 * 24));
 
-      // Dibujar Gantt
       const body = document.getElementById('ganttBody');
       let html = `<div class="gantt-header"><div class="col-info">Actividad / Responsable</div><div class="col-timeline">`;
       for(let i=0; i<totalDays; i++) {
@@ -204,6 +207,27 @@
       }
       html += `</div></div>`;
 
+      // BARRA MAESTRA DEL PROYECTO
+      const mStart = new Date("2026-01-16");
+      const mEnd = new Date("2026-04-09");
+      const mLeft = Math.ceil((mStart - minDate)/(1000*60*60*24)) * DAY_W;
+      const mWidth = (Math.ceil((mEnd - mStart)/(1000*60*60*24)) + 1) * DAY_W;
+      const masterTask = { reporte: "PROYECTO DE ELECTRIFICACION - TECSUR", estado: "En ejecución", avance: totalAvance, inicio: "2026-01-16", fin: "2026-04-09", owner: "ADMIN" };
+
+      html += `
+        <div class="gantt-row" style="background: rgba(56, 189, 248, 0.05); border-bottom: 2px solid var(--accent);">
+          <div class="col-info" style="font-weight: 800; color: var(--accent);">PROYECTO DE ELECTRIFICACION - TECSUR</div>
+          <div class="col-timeline">
+            <div class="bar-task bar-master" style="left:${mLeft}px; width:${mWidth}px"
+                 onmouseenter='showTooltip(event, ${JSON.stringify(masterTask)})' onmouseleave="hideTooltip()">
+              <div class="bar-progress" style="width:${totalAvance*100}%; background:var(--accent)"></div>
+              <div class="bar-label">AVANCE GLOBAL: ${(totalAvance*100).toFixed(1)}%</div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // ACTIVIDADES
       filtered.forEach(task => {
         const start = new Date(task.inicio);
         const end = new Date(task.fin);
@@ -219,7 +243,7 @@
             </div>
             <div class="col-timeline">
               <div class="bar-task" style="left:${left}px; width:${width}px; background:${color}44; border:1px solid ${color}"
-                   onmouseenter="showTooltip(event, ${JSON.stringify(task)})" onmouseleave="hideTooltip()">
+                   onmouseenter='showTooltip(event, ${JSON.stringify(task)})' onmouseleave="hideTooltip()">
                 <div class="bar-progress" style="width:${task.avance*100}%; background:${color}"></div>
                 <div class="bar-label">${(task.avance*100).toFixed(0)}%</div>
               </div>
@@ -228,10 +252,8 @@
         `;
       });
 
-      // Línea de Hoy
       const todayLeft = Math.ceil((TODAY - minDate)/(1000*60*60*24)) * DAY_W;
       html += `<div class="today-line" style="left: ${350 + todayLeft}px"></div>`;
-
       body.innerHTML = html;
     }
 
@@ -239,26 +261,32 @@
     function showTooltip(e, task) {
       tt.style.display = 'block';
       tt.innerHTML = `
-        <div style="font-weight:700; color:var(--accent); margin-bottom:8px">${task.reporte}</div>
+        <div class="tt-title">${task.reporte}</div>
         <div style="display:flex; justify-content:space-between; margin-bottom:4px"><span>Estado:</span> <b>${task.estado}</b></div>
-        <div style="display:flex; justify-content:space-between; margin-bottom:4px"><span>Avance:</span> <b>${(task.avance*100).toFixed(0)}%</b></div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:4px"><span>Avance:</span> <b style="color:var(--accent)">${(task.avance*100).toFixed(2)}%</b></div>
         <div style="display:flex; justify-content:space-between; margin-bottom:4px"><span>Inicio:</span> <span>${task.inicio}</span></div>
-        <div style="display:flex; justify-content:space-between;"><span>Fin:</span> <span>${task.fin}</span></div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:4px"><span>Fin:</span> <span>${task.fin}</span></div>
         <div style="margin-top:8px; padding-top:8px; border-top:1px solid var(--line); font-size:0.7rem; color:var(--muted)">Responsable: ${task.owner}</div>
       `;
       moveTooltip(e);
     }
+
     function hideTooltip() { tt.style.display = 'none'; }
+
     function moveTooltip(e) {
-      tt.style.left = (e.clientX + 15) + 'px';
-      tt.style.top = (e.clientY + 15) + 'px';
+      let x = e.clientX + 15;
+      let y = e.clientY + 15;
+      if (x + 280 > window.innerWidth) x = e.clientX - 290;
+      tt.style.left = x + 'px';
+      tt.style.top = y + 'px';
     }
     window.onmousemove = (e) => { if(tt.style.display==='block') moveTooltip(e); };
 
     init();
   </script>
 </body>
-
 </html>
+</html>
+
 
 
